@@ -1,0 +1,12 @@
+groups:
+- name: alert.rules.yml
+  rules:
+  - alert: low_connected_users
+    expr: play_current_users < 2
+    for: 30s
+    labels:
+      severity: warning
+    annotations:
+      description: '{{ $labels.instance }} of job {{ $labels.job }} is under lower
+        load.'
+      summary: Instance {{ $labels.instance }} under lower load

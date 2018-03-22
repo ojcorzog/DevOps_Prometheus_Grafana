@@ -1,0 +1,74 @@
+---
+version: '2'
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+networks:
+  back-tier:
+    driver: bridge
+
+services:
+  play-app:
+    image: "fagossa/play-prometheus"
+    container_name: play-prometheus
+    ports:
+     - "9000:9000"
+    networks:
+     - back-tier
+
+  prometheus:
+    build: ./prometheus
+    container_name: prometheus
+    volumes:
+     - prometheus_data:/prometheus
+    command:
+     - '--config.file=/etc/prometheus/prometheus.yml'
+    expose:
+     - 9090
+    ports:
+     - "9090:9090"
+    networks:
+     - back-tier
+
+  alertmanager:
+    build: ./alertmanager
+    container_name: alertmanager
+    command:
+     - '--config.file=/etc/prometheus/alertmanager.yml'
+    expose:
+     - 9093
+    ports:
+     - "9093:9093"
+    networks:
+     - back-tier
+
+  cadvisor:
+    image: google/cadvisor
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    expose:
+      - 8080
+    ports:
+     - "8080:8080"
+    networks:
+     - back-tier
+
+  grafana:
+    build: ./grafana
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    env_file:
+      - grafana/config.monitoring
+    networks:
+     - back-tier
